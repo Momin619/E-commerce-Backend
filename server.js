@@ -47,7 +47,9 @@ const favouriteProductRouter = require("./routes/favourite");
 
 app.use(
   cors({
-    origin: process.env.CLIENT_ORIGIN || "http://localhost:5173",
+    origin:
+      "https://e-commerce-frontend-drab-gamma.vercel.app/" ||
+      "http://localhost:5173",
     credentials: true,
   })
 );
