@@ -77,10 +77,10 @@ app.use(favouriteProductRouter);
 mongoose
   .connect(mongo_uri)
   .then(() => {
-    const port = process.env.PORT;
+    const PORT = process.env.PORT || 3000;
     console.log("Mongo db connected !");
-    app.listen(port, () => {
-      console.log(`Server running on http://localhost:${port}`);
+    app.listen(PORT, "0.0.0.0", () => {
+      console.log(`Server running on http://localhost:${PORT}`);
     });
   })
   .catch((error) => console.log("Mongoose error:", error));
