@@ -9,8 +9,6 @@ const cors = require("cors");
 
 const mongoose = require("mongoose");
 
-const port = process.env.PORT;
-
 const mongo_uri = process.env.MONGO_URI;
 
 const session = require("express-session");
@@ -79,6 +77,7 @@ app.use(favouriteProductRouter);
 mongoose
   .connect(mongo_uri)
   .then(() => {
+    const port = process.env.PORT;
     console.log("Mongo db connected !");
     app.listen(port, () => {
       console.log(`Server running on http://localhost:${port}`);
