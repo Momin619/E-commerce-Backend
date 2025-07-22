@@ -43,7 +43,12 @@ const userRouter = require("./routes/user");
 
 const favouriteProductRouter = require("./routes/favourite");
 
-app.use(cors({ origin: "http://localhost:5173", credentials: true }));
+app.use(
+  cors({
+    origin: process.env.CLIENT_ORIGIN || "http://localhost:5173",
+    credentials: true,
+  })
+);
 
 const path = require("path");
 
