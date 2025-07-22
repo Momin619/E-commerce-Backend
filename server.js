@@ -34,6 +34,7 @@ app.use(
     secret: "yourSecret",
     resave: false,
     saveUninitialized: false,
+    store: store,
     cookie: {
       secure: true,
       httpOnly: true,
