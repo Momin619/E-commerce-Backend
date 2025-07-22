@@ -72,11 +72,15 @@ app.use(favouriteProductRouter);
 // In your Express backend (e.g., routes/auth.js)
 
 mongoose
-  .connect(mongo_uri)
+  .connect(mongo_uri, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+    ssl: true, // or tls: true
+  })
   .then(() => {
     console.log("Mongo db connected !");
     app.listen(port, () => {
       console.log(`Server running on http://localhost:${port}`);
     });
   })
-  .catch((error) => console.log(error));
+  .catch((error) => console.log("Mongoose error:", error));
