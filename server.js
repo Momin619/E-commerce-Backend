@@ -34,10 +34,10 @@ app.use(
     secret: "yourSecret",
     resave: false,
     saveUninitialized: false,
-    store: store,
     cookie: {
       secure: true,
-      sameSite: "none",
+      httpOnly: true,
+      sameSite: "none", // required for cross-site cookies
     },
   })
 );
