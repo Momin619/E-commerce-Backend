@@ -23,7 +23,7 @@ build/
 Thumbs.db
 
 # Environment variables
-.env
+
 
 # Optional npm cache
 .npm

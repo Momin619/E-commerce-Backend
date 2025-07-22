@@ -19,13 +19,17 @@ const store = mongodb_session({
   uri: process.env.MONGO_URI,
   collection: "sessions",
 });
+app.set("trust proxy", 1); // if behind a proxy like Railway or Vercel
 
 app.use(
   session({
-    secret: "my mern website",
-    saveUninitialized: false,
+    secret: "yourSecret",
     resave: false,
-    store,
+    saveUninitialized: false,
+    cookie: {
+      secure: true, // ⬅️ Required for HTTPS
+      sameSite: "none", // ⬅️ Required for cross-site cookies
+    },
   })
 );
 
