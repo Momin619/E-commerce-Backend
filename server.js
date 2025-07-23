@@ -58,6 +58,7 @@ const authRouter = require("./routes/auth");
 const hostRouter = require("./routes/host");
 const userRouter = require("./routes/user");
 const favouriteProductRouter = require("./routes/favourite");
+const profileRouter = require("./routes/profile");
 
 app.get("/me", (req, res) => {
   if (req.session.user && req.session.isLoggedIn) {
@@ -72,6 +73,7 @@ app.use(authRouter);
 app.use(hostRouter);
 app.use(userRouter);
 app.use(favouriteProductRouter);
+app.use(profileRouter);
 
 // === 🔌 DB CONNECTION ===
 mongoose
