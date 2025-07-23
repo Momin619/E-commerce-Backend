@@ -1,5 +1,6 @@
-require("dotenv").config();
-
+require("dotenv").config({
+  path: process.env.NODE_ENV === "production" ? ".env.production" : ".env",
+});
 const express = require("express");
 const cors = require("cors");
 const session = require("express-session");
@@ -44,9 +45,9 @@ app.use(
     saveUninitialized: false,
     store: store,
     cookie: {
-      secure: true,
+      secure: process.env.NODE_ENV === "production",
       httpOnly: true,
-      sameSite: "none", // required for cross-site cookies
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax", // required for cross-site cookies
     },
   })
 );
