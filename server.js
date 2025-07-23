@@ -11,13 +11,21 @@ const app = express();
 app.set("trust proxy", 1);
 
 // === 🔧 ENABLE CORS FIRST (NO SLASH at end) ===
+const allowedOrigins = [process.env.FRONTEND_DEV, process.env.FRONTEND_PROD];
+
+// Dynamic CORS config
 app.use(
   cors({
-    origin: "https://e-commerce-frontend-drab-gamma.vercel.app",
+    origin: function (origin, callback) {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
     credentials: true,
   })
 );
-
 // === 📦 MIDDLEWARES ===
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -31,7 +39,7 @@ const store = new MongoDBStore({
 
 app.use(
   session({
-    secret: "yourSecret",
+    secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
     store: store,
