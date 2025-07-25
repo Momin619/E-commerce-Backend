@@ -77,6 +77,10 @@ app.use(favouriteProductRouter);
 app.use(profileRouter);
 app.use(cartRouter);
 
+app.use((req, res, next) => {
+  res.status(404).json({ message: "404 page not found" });
+});
+
 // === 🔌 DB CONNECTION ===
 mongoose
   .connect(process.env.MONGO_URI)
