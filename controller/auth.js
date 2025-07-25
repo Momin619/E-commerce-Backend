@@ -43,6 +43,7 @@ exports.postSignUp = [
     .withMessage("Invalid user type"),
 
   async (req, res, next) => {
+    let cart = [];
     const { firstName, lastName, email, password, userType } = req.body;
     console.log(req.body);
 
@@ -59,6 +60,7 @@ exports.postSignUp = [
         email,
         password: hashedPassword,
         userType,
+        cart,
       });
       req.session.isLoggedIn = false;
       const isLoggedIn = req.session.isLoggedIn;
@@ -79,7 +81,7 @@ exports.postLogin = async (req, res, next) => {
     if (!user) {
       return res.status(400).json({ errors: ["User does not exist."] });
     }
-
+    const userCart = user.cart || [];
     const isMatch = await bcrypt.compare(password, user.password);
 
     if (!isMatch) {
@@ -101,6 +103,7 @@ exports.postLogin = async (req, res, next) => {
       user: req.session.user,
       isLoggedIn: req.session.isLoggedIn,
       redirectTo: user.userType === "user" ? "/products" : "/host/products",
+      cart: userCart,
     });
   } catch (error) {
     console.error("Login error:", error);
