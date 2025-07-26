@@ -2,7 +2,7 @@ const Product = require("../model/Product");
 const User = require("../model/User");
 const fs = require("fs");
 const path = require("path");
-
+const cleanUserData = require("../utils/cleanup");
 // Add Product
 exports.postAddProduct = async (req, res, next) => {
   try {
@@ -45,7 +45,6 @@ exports.getHostProducts = async (req, res, next) => {
   }
 };
 
-// Delete Product
 exports.postDeleteProduct = async (req, res, next) => {
   try {
     const productId = req.params.id;
@@ -53,24 +52,15 @@ exports.postDeleteProduct = async (req, res, next) => {
     const product = await Product.findById(productId);
     if (!product) return res.status(404).json({ message: "Product not found" });
 
+    // Delete product image from server
     const productImagePath = path.join(__dirname, "..", product.productImage);
     if (fs.existsSync(productImagePath)) {
       fs.unlinkSync(productImagePath);
     }
 
-    await Product.findByIdAndDelete(productId);
-
-    await User.updateMany(
-      {
-        $or: [{ favourites: id }, { "cart.productId": id }],
-      },
-      {
-        $pull: {
-          favourites: id,
-          cart: { productId: id },
-        },
-      }
-    );
+    // This will trigger your middleware to remove productId from user favourites/cart
+    await Product.findOneAndDelete({ _id: productId });
+    await cleanUserData();
     res.status(200).json({ message: "Product deleted successfully" });
   } catch (error) {
     console.error(error);

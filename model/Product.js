@@ -19,4 +19,24 @@ const ProductSchema = mongoose.Schema({
   },
 });
 
+ProductSchema.pre("findOneAndDelete", async function (next) {
+  const product = await this.model.findOne(this.getQuery());
+  if (product) {
+    const productId = product._id;
+
+    await mongoose.model("User").updateMany(
+      {
+        $or: [{ favourites: productId }, { "cart.productId": productId }],
+      },
+      {
+        $pull: {
+          favourites: productId,
+          cart: { productId: productId },
+        },
+      }
+    );
+  }
+  next();
+});
+
 module.exports = mongoose.model("Product", ProductSchema);
