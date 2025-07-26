@@ -59,11 +59,18 @@ exports.postDeleteProduct = async (req, res, next) => {
     }
 
     await Product.findByIdAndDelete(productId);
-    await User.updateMany(
-      { favourites: productId },
-      { $pull: { favourites: productId } }
-    );
 
+    await User.updateMany(
+      {
+        $or: [{ favourites: id }, { "cart.productId": id }],
+      },
+      {
+        $pull: {
+          favourites: id,
+          cart: { productId: id },
+        },
+      }
+    );
     res.status(200).json({ message: "Product deleted successfully" });
   } catch (error) {
     console.error(error);
