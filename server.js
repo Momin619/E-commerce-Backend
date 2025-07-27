@@ -60,7 +60,7 @@ const userRouter = require("./routes/user");
 const favouriteProductRouter = require("./routes/favourite");
 const profileRouter = require("./routes/profile");
 const cartRouter = require("./routes/cart");
-
+const stripeRouter = require("./routes/stripe");
 app.get("/me", (req, res) => {
   if (req.session.user && req.session.isLoggedIn) {
     res.json({ user: req.session.user, isLoggedIn: true });
@@ -76,7 +76,7 @@ app.use(userRouter);
 app.use(favouriteProductRouter);
 app.use(profileRouter);
 app.use(cartRouter);
-
+app.use("/api/stripe", stripeRouter);
 app.use((req, res, next) => {
   res.status(404).json({ message: "404 page not found" });
 });

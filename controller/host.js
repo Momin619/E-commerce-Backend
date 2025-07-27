@@ -136,3 +136,24 @@ exports.putEditProduct = async (req, res, next) => {
     res.status(500).json({ message: "Product update failed" });
   }
 };
+
+exports.postCreateStripe = async (req, res, next) => {
+  // Route: /connect-account
+
+  const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
+  const user = req.user; // From session or JWT
+
+  const account = await stripe.accounts.create({ type: "express" });
+
+  user.stripeAccountId = account.id;
+  await user.save();
+
+  const accountLink = await stripe.accountLinks.create({
+    account: account.id,
+    refresh_url: "http://localhost:5173/reauth",
+    return_url: "http://localhost:5173/complete",
+    type: "account_onboarding",
+  });
+
+  res.json({ url: accountLink.url });
+};

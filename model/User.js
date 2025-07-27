@@ -27,6 +27,7 @@ const UserSchema = mongoose.Schema({
       },
     },
   ],
+  stripeAccountId: { type: String, default: null },
 });
 
 module.exports = mongoose.model("User", UserSchema);

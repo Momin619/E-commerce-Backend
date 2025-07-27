@@ -1,7 +1,5 @@
 const Product = require("../model/Product");
-const stripe = require("stripe")(
-  "sk_test_51RpCS0RswC8iinaz94Mtyx3mZI2rQJiKvLvIK2Ma5p9q3QbBZcNO3ekmV5umRkbmcDvYacgdmlONV3LxQCLyRcSg00iYGyjuVE"
-);
+const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 exports.getProducts = async (req, res, next) => {
   try {
     const products = await Product.find().populate("owner");
@@ -21,35 +19,38 @@ exports.getProductDetails = async (req, res, next) => {
   }
 };
 
-exports.postPayment = async (req, res, next) => {
-  try {
-    const { products } = req.body;
-    console.log(req.body);
-    const lineItems = products.map((item) => ({
+exports.postPayment = async (req, res) => {
+  const groupedBySeller = {};
+
+  for (const item of products) {
+    const product = await Product.findById(item.productId._id).populate(
+      "owner"
+    );
+
+    if (!product || !product.owner || !product.owner.stripeAccountId) {
+      return res
+        .status(400)
+        .json({ error: "Invalid product or seller not connected." });
+    }
+
+    const sellerId = product.owner._id.toString();
+    if (!groupedBySeller[sellerId]) {
+      groupedBySeller[sellerId] = {
+        stripeAccountId: product.owner.stripeAccountId,
+        items: [],
+      };
+    }
+
+    groupedBySeller[sellerId].items.push({
       price_data: {
         currency: "usd",
         product_data: {
-          name: item.productId.productName,
-          images: [
-            `https://e-commerce-backend-production-abe1.up.railway.app${item.productId.productImage}`,
-          ],
+          name: product.productName,
+          images: [`https://yourdomain.com${product.productImage}`],
         },
-        unit_amount: item.productId.productPrice * 100, // Stripe uses cents
+        unit_amount: product.productPrice * 100,
       },
       quantity: item.quantity,
-    }));
-
-    const session = await stripe.checkout.sessions.create({
-      payment_method_types: ["card"],
-      mode: "payment",
-      line_items: lineItems,
-      success_url: "http://localhost:5173/success",
-      cancel_url: "http://localhost:5173/cancel",
     });
-
-    res.status(200).json({ id: session.id });
-  } catch (err) {
-    console.error("Stripe Checkout Error:", err.message);
-    res.status(500).json({ error: "Stripe Checkout Failed" });
   }
 };

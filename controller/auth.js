@@ -1,6 +1,6 @@
 const User = require("../model/User");
 const { check, validationResult } = require("express-validator");
-
+const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 const bcrypt = require("bcryptjs");
 exports.postSignUp = [
   check("firstName")
@@ -98,7 +98,6 @@ exports.postLogin = async (req, res, next) => {
       userType: user.userType,
     };
 
-    // Respond with user info and redirect path
     return res.status(200).json({
       user: req.session.user,
       isLoggedIn: req.session.isLoggedIn,
@@ -110,6 +109,8 @@ exports.postLogin = async (req, res, next) => {
     return res.status(500).json({ errors: ["Internal server error."] });
   }
 };
+
+// Respond with user info and redirect path
 
 exports.postLogout = (req, res, next) => {
   req.session.destroy((err) => {
