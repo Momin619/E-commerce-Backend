@@ -7,6 +7,10 @@ const FRONTEND_URL = isProduction
   ? process.env.FRONTEND_PROD
   : process.env.FRONTEND_DEV;
 
+const BASE_URL = isProduction
+  ? process.env.BACKEND_PROD
+  : process.env.BACKEND_DEV;
+
 exports.createCheckoutSession = async (req, res) => {
   try {
     const { products } = req.body;
