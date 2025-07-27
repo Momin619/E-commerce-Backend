@@ -3,10 +3,6 @@ const Product = require("../model/Product");
 const User = require("../model/User");
 const isProduction = process.env.NODE_ENV === "production";
 
-const BASE_URL = isProduction
-  ? "https://e-commerce-backend-production-abe1.up.railway.app"
-  : "http://localhost:3000";
-
 const FRONTEND_URL = isProduction
   ? process.env.FRONTEND_PROD
   : process.env.FRONTEND_DEV;
