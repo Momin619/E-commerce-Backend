@@ -66,10 +66,20 @@ router.post(
           0
         );
         const buyer = await User.findById(metadata.buyerId);
-        if (!buyer) throw new Error("Invalid buyer");
+        const seller = await User.findById(metadata.sellerId);
+        if (!buyer || !seller) throw new Error("Invalid buyer or seller");
+
         await Order.create({
-          buyer,
-          seller: sellerId,
+          buyer: {
+            id: buyer._id,
+            name: `${buyer.firstName} ${buyer.lastName}`,
+            email: buyer.email,
+          },
+          seller: {
+            id: seller._id,
+            name: `${seller.firstName} ${seller.lastName}`,
+            email: seller.email,
+          },
           products,
           totalAmount,
           paymentStatus: "paid",

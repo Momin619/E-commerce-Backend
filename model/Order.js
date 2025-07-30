@@ -1,9 +1,16 @@
-// models/Order.js
 const mongoose = require("mongoose");
 
 const orderSchema = new mongoose.Schema({
-  buyer: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
-  seller: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+  buyer: {
+    id: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+    name: String,
+    email: String,
+  },
+  seller: {
+    id: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+    name: String,
+    email: String,
+  },
   products: [
     {
       product: { type: mongoose.Schema.Types.ObjectId, ref: "Product" },
