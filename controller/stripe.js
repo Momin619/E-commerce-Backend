@@ -1,6 +1,7 @@
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 const Product = require("../model/Product");
 const User = require("../model/User");
+
 const isProduction = process.env.NODE_ENV === "production";
 
 const FRONTEND_URL = isProduction
@@ -11,73 +12,94 @@ const BASE_URL = isProduction
   ? process.env.BACKEND_PROD
   : process.env.BACKEND_DEV;
 
+// Create Stripe Checkout Session
 exports.createCheckoutSession = async (req, res) => {
   try {
     const { products } = req.body;
 
-    const lineItems = products.map((item) => ({
-      price_data: {
-        currency: "gbp",
-        unit_amount: Math.round(item.productPrice * 100),
-        product_data: {
-          name: item.productName,
-          images: [`${BASE_URL}${item.productImage}`],
+    // Fetch products and populate owner details
+    const fetchedProducts = await Product.find({
+      _id: { $in: products.map((p) => p.productId) },
+    }).populate("owner");
+
+    if (!fetchedProducts.length) {
+      return res.status(400).json({ error: "No products found" });
+    }
+
+    // Create line items for Stripe
+    const line_items = fetchedProducts.map((product) => {
+      const matchedProduct = products.find(
+        (p) => p.productId === product._id.toString()
+      );
+
+      return {
+        price_data: {
+          currency: "gbp",
+          unit_amount: Math.round(product.productPrice * 100), // Price in pennies
+          product_data: {
+            name: product.productName,
+            description: product.productDescription,
+            images: [`${BASE_URL}${product.productImage}`],
+          },
         },
-      },
-      quantity: item.quantity,
-    }));
+        quantity: matchedProduct?.quantity || 1,
+      };
+    });
+
+    const buyer = req.session.user;
+    const firstProduct = fetchedProducts[0];
 
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
-      line_items: lineItems,
+      line_items,
       mode: "payment",
-      success_url: `${FRONTEND_URL}/stripe/success`,
-      cancel_url: `${FRONTEND_URL}/stripe/failed`,
-
-      // ✅ Send relevant metadata here (optional)
       metadata: {
-        sellerId: products[0]?.ownerId?.toString() || "unknown",
-        productIds: products.map((p) => p.productId.toString()).join(","),
-        productNames: products.map((p) => p.productName).join(","),
-        quantities: products.map((p) => p.quantity.toString()).join(","),
-        prices: products.map((p) => p.productPrice.toString()).join(","),
+        buyerId: buyer._id?.toString() || "",
+        buyerName: `${buyer.firstName} ${buyer.lastName}`,
+        buyerEmail: buyer.email,
+        sellerId: firstProduct.owner._id?.toString() || "",
+        sellerName: `${firstProduct.owner.firstName} ${firstProduct.owner.lastName}`,
+        sellerEmail: firstProduct.owner.email,
+        productIds: fetchedProducts.map((p) => p._id.toString()).join(","),
+        quantities: products.map((p) => p.quantity).join(","),
+        prices: fetchedProducts.map((p) => p.productPrice).join(","),
+        productNames: fetchedProducts.map((p) => p.productName).join(","),
       },
+      success_url: `${FRONTEND_URL}/stripe/success`,
+      cancel_url: `${FRONTEND_URL}/stripe/cancel`,
     });
 
     res.json({ url: session.url });
   } catch (err) {
-    console.error(err);
+    console.error("Checkout Session Error:", err);
     res.status(500).json({ error: "Failed to create checkout session" });
   }
 };
 
+// Create or retrieve Stripe Connect account and generate onboarding link
 exports.createConnectAccount = async (req, res) => {
   try {
     const user = await User.findById(req.session.user._id);
 
-    // Check if the user already has a Stripe account
     let account;
+
     if (!user.stripeAccountId) {
-      // If not, create a new one
       account = await stripe.accounts.create({ type: "express" });
       user.stripeAccountId = account.id;
       await user.save();
     } else {
       try {
-        // Try retrieving the existing account to verify it still exists
         account = await stripe.accounts.retrieve(user.stripeAccountId);
       } catch (err) {
-        // If account doesn't exist (deleted), reset and recreate
         account = await stripe.accounts.create({ type: "express" });
         user.stripeAccountId = account.id;
         await user.save();
       }
     }
 
-    // Create onboarding link
     const accountLink = await stripe.accountLinks.create({
       account: user.stripeAccountId,
-      refresh_url: ` ${FRONTEND_URL}`,
+      refresh_url: `${FRONTEND_URL}`,
       return_url: `${FRONTEND_URL}`,
       type: "account_onboarding",
     });

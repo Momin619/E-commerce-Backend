@@ -27,6 +27,11 @@ app.use(
     credentials: true,
   })
 );
+const webhookRoutes = require("./routes/webhook");
+
+// ✅ Mount this FIRST and directly handle raw body
+app.use("/api/webhook", webhookRoutes);
+
 // === 📦 MIDDLEWARES ===
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -61,6 +66,8 @@ const favouriteProductRouter = require("./routes/favourite");
 const profileRouter = require("./routes/profile");
 const cartRouter = require("./routes/cart");
 const stripeRouter = require("./routes/stripe");
+// index.js or server.js
+
 app.get("/me", (req, res) => {
   if (req.session.user && req.session.isLoggedIn) {
     res.json({ user: req.session.user, isLoggedIn: true });

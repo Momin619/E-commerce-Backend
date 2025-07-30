@@ -1,5 +1,5 @@
 const User = require("../model/User");
-
+const Product = require("../model/Product");
 const calculateTotal = (cart) => {
   return Object.values(cart).reduce((total, item) => {
     return total + item.price * item.quantity;
@@ -16,25 +16,42 @@ exports.postAddTocart = async (req, res, next) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    // Check if product is already in the cart
+    const product = await Product.findById(productId);
+    if (!product) {
+      return res.status(404).json({ message: "Product not found" });
+    }
+
+    const productStock = product.productStock;
+
+    if (productStock <= 0) {
+      return res.status(400).json({ message: "Product out of stock" });
+    }
+
     const existingItem = user.cart.find(
       (item) => item.productId.toString() === productId
     );
 
     if (existingItem) {
-      // If found, increase quantity
-      existingItem.quantity += 1;
+      if (existingItem.quantity < productStock) {
+        existingItem.quantity += 1;
+        console.log("Quantity increased in cart");
+      } else {
+        return res
+          .status(400)
+          .json({ message: "Stock limit reached for this product" });
+      }
     } else {
-      // Else push new item to cart
+      // Add with quantity 1 or limit to stock if stock < 1
       user.cart.push({
         productId,
         quantity: 1,
       });
+      console.log("New product added to cart");
     }
 
     await user.save();
 
-    res.status(200).json({
+    return res.status(200).json({
       message: "Product added to cart",
       cart: user.cart,
     });
