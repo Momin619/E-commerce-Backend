@@ -17,6 +17,11 @@ const ProductSchema = mongoose.Schema({
     type: Number,
     min: 0,
   },
+  productCategory: {
+    type: String,
+    required: true,
+    enum: ["Electronics", "Clothing", "Food", "Accessories", "Other"],
+  },
 });
 
 ProductSchema.pre("findOneAndDelete", async function (next) {

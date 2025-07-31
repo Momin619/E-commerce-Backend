@@ -4,31 +4,50 @@ const fs = require("fs");
 const path = require("path");
 const cleanUserData = require("../utils/cleanup");
 // Add Product
+const VALID_CATEGORIES = [
+  "Electronics",
+  "Clothing",
+  "Food",
+  "Accessories",
+  "Other",
+];
 exports.postAddProduct = async (req, res, next) => {
   try {
-    const { productName, productDescription, productPrice, productStock } =
-      req.body;
+    const {
+      productName,
+      productDescription,
+      productPrice,
+      productStock,
+      productCategory,
+    } = req.body;
+
     const owner = req.session.user._id;
 
-    const imagePath = req.file ? "/uploads/" + req.file.filename : null;
+    // Validate category
+    if (!VALID_CATEGORIES.includes(productCategory)) {
+      return res.status(400).json({ error: "Invalid product category." });
+    }
 
-    if (!imagePath) {
-      return res.status(400).json({ error: "Image upload failed" });
+    // Check image
+    if (!req.file) {
+      return res.status(400).json({ error: "Image upload required." });
     }
 
     const product = new Product({
       productName,
       productDescription,
       productPrice,
-      productImage: imagePath,
-      owner,
       productStock,
+      productImage: "/uploads/" + req.file.filename,
+      owner,
+      productCategory,
     });
 
     await product.save();
-    res.status(200).json({ product });
+
+    res.status(201).json({ message: "Product added", product });
   } catch (error) {
-    console.error(error);
+    console.error("Error adding product:", error);
     res.status(500).json({ message: "Adding product failed" });
   }
 };
@@ -100,25 +119,37 @@ exports.putEditProduct = async (req, res, next) => {
   try {
     const productId = req.params.id;
 
+    const {
+      productName,
+      productDescription,
+      productPrice,
+      productStock,
+      productCategory,
+    } = req.body;
+
+    if (!VALID_CATEGORIES.includes(productCategory)) {
+      return res.status(400).json({ error: "Invalid product category." });
+    }
+
     const updatedFields = {
-      productName: req.body.productName,
-      productDescription: req.body.productDescription,
-      productPrice: req.body.productPrice,
-      productStock: req.body.productStock,
+      productName,
+      productDescription,
+      productPrice,
+      productStock,
+      productCategory,
     };
 
+    // Handle image replacement
     if (req.file) {
       const product = await Product.findById(productId);
 
-      // Delete old image
-      if (product.productImage) {
+      if (product?.productImage) {
         const oldImagePath = path.join(__dirname, "..", product.productImage);
         if (fs.existsSync(oldImagePath)) {
           fs.unlinkSync(oldImagePath);
         }
       }
 
-      // New image
       updatedFields.productImage = "/uploads/" + req.file.filename;
     }
 
@@ -135,25 +166,4 @@ exports.putEditProduct = async (req, res, next) => {
     console.error("Edit failed:", error);
     res.status(500).json({ message: "Product update failed" });
   }
-};
-
-exports.postCreateStripe = async (req, res, next) => {
-  // Route: /connect-account
-
-  const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
-  const user = req.user; // From session or JWT
-
-  const account = await stripe.accounts.create({ type: "express" });
-
-  user.stripeAccountId = account.id;
-  await user.save();
-
-  const accountLink = await stripe.accountLinks.create({
-    account: account.id,
-    refresh_url: "http://localhost:5173/reauth",
-    return_url: "http://localhost:5173/complete",
-    type: "account_onboarding",
-  });
-
-  res.json({ url: accountLink.url });
 };
