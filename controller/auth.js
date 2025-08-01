@@ -101,7 +101,7 @@ exports.postLogin = async (req, res, next) => {
     return res.status(200).json({
       user: req.session.user,
       isLoggedIn: req.session.isLoggedIn,
-      redirectTo: user.userType === "user" ? "/products" : "/host/products",
+      redirectTo: user.userType === "user" ? "/home" : "/host/products",
       cart: userCart,
     });
   } catch (error) {

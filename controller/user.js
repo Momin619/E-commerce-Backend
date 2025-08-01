@@ -58,3 +58,34 @@ exports.getProductDetails = async (req, res, next) => {
     console.log(error);
   }
 };
+exports.getHomePage = async (req, res, next) => {
+  try {
+    const allProducts = await Product.find();
+    const topsales_products = allProducts.filter(
+      (product) => product.productPrice > 100
+    );
+
+    res.json({ topsales_products });
+  } catch (error) {
+    next(error);
+  }
+};
+
+exports.getCategoryProducts = async (req, res, next) => {
+  try {
+    const { category } = req.query;
+
+    // If no category param OR it's "All", return all products
+    if (!category || category === "All") {
+      const filtered_products = await Product.find();
+      return res.json({ filtered_products });
+    }
+
+    // Otherwise, filter by category
+    const query = { productCategory: category };
+    const filtered_products = await Product.find(query);
+    res.json({ filtered_products });
+  } catch (error) {
+    next(error);
+  }
+};
