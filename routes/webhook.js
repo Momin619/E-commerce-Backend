@@ -11,13 +11,9 @@ router.post(
   "/",
   express.raw({ type: "application/json" }),
   async (req, res) => {
-    console.log("🔔 Webhook received");
-    console.log("Headers:", req.headers);
-    console.log("Body type:", typeof req.body);
-
     const sig = req.headers["stripe-signature"];
-
     let event;
+
     try {
       event = stripe.webhooks.constructEvent(
         req.body,
@@ -38,17 +34,26 @@ router.post(
         const quantities = metadata.quantities.split(",");
         const prices = metadata.prices.split(",");
         const names = metadata.productNames.split(",");
+        const images = metadata.productImages.split(","); // ✅ added
 
-        const sellerId = metadata.sellerId;
+        const buyer = await User.findById(metadata.buyerId);
+        const seller = await User.findById(metadata.sellerId);
+        if (!buyer || !seller) throw new Error("Invalid buyer or seller");
 
         const products = await Promise.all(
           productIds.map(async (id, index) => {
             const product = await Product.findById(id);
             const quantity = parseInt(quantities[index]);
 
-            // 🧠 Reduce product stock
+            // Reduce product stock
             if (product.productStock >= quantity) {
               product.productStock -= quantity;
+
+              // Update inStock to false if stock is 0
+              if (product.productStock === 0) {
+                product.inStock = false;
+              }
+
               await product.save();
             }
 
@@ -57,6 +62,7 @@ router.post(
               name: names[index],
               price: parseFloat(prices[index]),
               quantity,
+              image: images[index], // ✅ save image
             };
           })
         );
@@ -65,9 +71,6 @@ router.post(
           (acc, p) => acc + p.price * p.quantity,
           0
         );
-        const buyer = await User.findById(metadata.buyerId);
-        const seller = await User.findById(metadata.sellerId);
-        if (!buyer || !seller) throw new Error("Invalid buyer or seller");
 
         await Order.create({
           buyer: {
@@ -91,7 +94,7 @@ router.post(
         res.status(500).send("Error processing order");
       }
     } else {
-      res.sendStatus(200); // other event types
+      res.sendStatus(200); // handle other events
     }
   }
 );

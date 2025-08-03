@@ -13,8 +13,13 @@ exports.getProducts = async (req, res, next) => {
       if (maxPrice) query.productPrice.$lte = parseFloat(maxPrice);
     }
 
-    // 2. Filter by stock
+    // 2. Filter by stock (default behavior: only show in-stock)
     if (inStock === "true") {
+      query.productStock = { $gt: 0 }; // Explicitly in stock
+    } else if (inStock === "false") {
+      query.productStock = { $lte: 0 }; // Explicitly out of stock
+    } else {
+      // By default, only show products in stock
       query.productStock = { $gt: 0 };
     }
 
@@ -60,7 +65,7 @@ exports.getProductDetails = async (req, res, next) => {
 };
 exports.getHomePage = async (req, res, next) => {
   try {
-    const allProducts = await Product.find();
+    const allProducts = await Product.find({ inStock: true });
     const topsales_products = allProducts.filter(
       (product) => product.productPrice > 100
     );
@@ -77,12 +82,12 @@ exports.getCategoryProducts = async (req, res, next) => {
 
     // If no category param OR it's "All", return all products
     if (!category || category === "All") {
-      const filtered_products = await Product.find();
+      const filtered_products = await Product.find({ inStock: true });
       return res.json({ filtered_products });
     }
 
     // Otherwise, filter by category
-    const query = { productCategory: category };
+    const query = { productCategory: category, inStock: true };
     const filtered_products = await Product.find(query);
     res.json({ filtered_products });
   } catch (error) {

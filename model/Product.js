@@ -1,5 +1,4 @@
 const express = require("express");
-
 const mongoose = require("mongoose");
 
 const ProductSchema = mongoose.Schema({
@@ -17,6 +16,10 @@ const ProductSchema = mongoose.Schema({
     type: Number,
     min: 0,
   },
+  inStock: {
+    type: Boolean,
+    default: true,
+  },
   productCategory: {
     type: String,
     required: true,
@@ -24,11 +27,14 @@ const ProductSchema = mongoose.Schema({
   },
 });
 
+// Delete product references from User & Orders before deletion
 ProductSchema.pre("findOneAndDelete", async function (next) {
   const product = await this.model.findOne(this.getQuery());
+
   if (product) {
     const productId = product._id;
 
+    // 1. Remove from User favourites and cart
     await mongoose.model("User").updateMany(
       {
         $or: [{ favourites: productId }, { "cart.productId": productId }],
@@ -40,7 +46,19 @@ ProductSchema.pre("findOneAndDelete", async function (next) {
         },
       }
     );
+
+    // 2. Delete orders that contain this product
+    await mongoose.model("Order").deleteMany({
+      "products.productId": productId,
+    });
   }
+
+  next();
+});
+
+// Update inStock based on productStock
+ProductSchema.pre("save", function (next) {
+  this.inStock = this.productStock > 0;
   next();
 });
 

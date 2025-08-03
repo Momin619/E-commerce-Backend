@@ -66,6 +66,7 @@ const favouriteProductRouter = require("./routes/favourite");
 const profileRouter = require("./routes/profile");
 const cartRouter = require("./routes/cart");
 const stripeRouter = require("./routes/stripe");
+const orderRouter = require("./routes/order");
 // index.js or server.js
 
 app.get("/me", (req, res) => {
@@ -84,6 +85,7 @@ app.use(favouriteProductRouter);
 app.use(profileRouter);
 app.use(cartRouter);
 app.use("/api/stripe", stripeRouter);
+app.use(orderRouter);
 app.use((req, res, next) => {
   res.status(404).json({ message: "404 page not found" });
 });

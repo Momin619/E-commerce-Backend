@@ -17,7 +17,7 @@ exports.createCheckoutSession = async (req, res) => {
   try {
     const { products } = req.body;
 
-    // Fetch products and populate owner details
+    // Fetch product details
     const fetchedProducts = await Product.find({
       _id: { $in: products.map((p) => p.productId) },
     }).populate("owner");
@@ -26,47 +26,49 @@ exports.createCheckoutSession = async (req, res) => {
       return res.status(400).json({ error: "No products found" });
     }
 
-    // Create line items for Stripe
+    const buyer = req.session.user;
+    const firstProduct = fetchedProducts[0];
+
+    // Create Stripe line items
     const line_items = fetchedProducts.map((product) => {
-      const matchedProduct = products.find(
+      const matched = products.find(
         (p) => p.productId === product._id.toString()
       );
 
       return {
         price_data: {
           currency: "gbp",
-          unit_amount: Math.round(product.productPrice * 100), // Price in pennies
+          unit_amount: Math.round(product.productPrice * 100),
           product_data: {
             name: product.productName,
             description: product.productDescription,
-            images: [`${BASE_URL}${product.productImage}`],
+            images: [`${BASE_URL}${product.productImage}`], // ✅ Stripe will show this image
           },
         },
-        quantity: matchedProduct?.quantity || 1,
+        quantity: matched?.quantity || 1,
       };
     });
 
-    const buyer = req.session.user;
-    const firstProduct = fetchedProducts[0];
+    // Metadata arrays
+    const metadata = {
+      buyerId: buyer._id?.toString(),
+      sellerId: firstProduct.owner._id?.toString(),
+      productIds: fetchedProducts.map((p) => p._id.toString()).join(","),
+      quantities: products.map((p) => p.quantity).join(","),
+      prices: fetchedProducts.map((p) => p.productPrice).join(","),
+      productNames: fetchedProducts.map((p) => p.productName).join(","),
+      productImages: fetchedProducts
+        .map((p) => `${BASE_URL}${p.productImage}`)
+        .join(","), // ✅ added
+    };
 
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
       line_items,
       mode: "payment",
-      metadata: {
-        buyerId: buyer._id?.toString() || "",
-        buyerName: `${buyer.firstName} ${buyer.lastName}`,
-        buyerEmail: buyer.email,
-        sellerId: firstProduct.owner._id?.toString() || "",
-        sellerName: `${firstProduct.owner.firstName} ${firstProduct.owner.lastName}`,
-        sellerEmail: firstProduct.owner.email,
-        productIds: fetchedProducts.map((p) => p._id.toString()).join(","),
-        quantities: products.map((p) => p.quantity).join(","),
-        prices: fetchedProducts.map((p) => p.productPrice).join(","),
-        productNames: fetchedProducts.map((p) => p.productName).join(","),
-      },
       success_url: `${FRONTEND_URL}/stripe/success`,
       cancel_url: `${FRONTEND_URL}/stripe/cancel`,
+      metadata,
     });
 
     res.json({ url: session.url });

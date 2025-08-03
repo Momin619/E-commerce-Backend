@@ -130,13 +130,14 @@ exports.putEditProduct = async (req, res, next) => {
     if (!VALID_CATEGORIES.includes(productCategory)) {
       return res.status(400).json({ error: "Invalid product category." });
     }
-
+    const inStock = productStock > 0;
     const updatedFields = {
       productName,
       productDescription,
       productPrice,
       productStock,
       productCategory,
+      inStock,
     };
 
     // Handle image replacement
