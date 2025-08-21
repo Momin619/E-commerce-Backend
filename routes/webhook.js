@@ -71,7 +71,7 @@ router.post(
           (acc, p) => acc + p.price * p.quantity,
           0
         );
-
+        console.log("creating order");
         await Order.create({
           buyer: {
             id: buyer._id,
