@@ -1,0 +1,3 @@
+you have to start the stripe if checking payments in cmd C:\stripe> by commmand 
+stripe listen --forward-to localhost:3000/api/webhook/
+all terminals must be started to check it
